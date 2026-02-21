@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Playwright CLI tool files (don't need these on GitHub)
+.playwright-cli/
+.claude/
+
+# Windows system
+nul
+Thumbs.db
+
+# Logs
+*.log
+
+images/
