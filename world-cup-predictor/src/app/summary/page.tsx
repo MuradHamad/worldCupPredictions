@@ -186,11 +186,44 @@ export default function SummaryPage() {
   };
 
   const getTeamById = (teamId: string): Team | undefined => {
+    // Groups teams
     for (const group of groups) {
       const team = group.teams.find((t) => t.id === teamId);
       if (team) return team;
     }
-    return undefined;
+    // Knockout teams - hardcoded lookup
+    const knockoutTeams: Team[] = [
+      { id: "mex", name: "Mexico", flag: "🇲🇽" },
+      { id: "can", name: "Canada", flag: "🇨🇦" },
+      { id: "bra", name: "Brazil", flag: "🇧🇷" },
+      { id: "ger", name: "Germany", flag: "🇩🇪" },
+      { id: "esp", name: "Spain", flag: "🇪🇸" },
+      { id: "fra", name: "France", flag: "🇫🇷" },
+      { id: "arg", name: "Argentina", flag: "🇦🇷" },
+      { id: "por", name: "Portugal", flag: "🇵🇹" },
+      { id: "ned", name: "Netherlands", flag: "🇳🇱" },
+      { id: "eng", name: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+      { id: "bel", name: "Belgium", flag: "🇧🇪" },
+      { id: "ita", name: "Italy", flag: "🇮🇹" },
+      { id: "cro", name: "Croatia", flag: "🇭🇷" },
+      { id: "uru", name: "Uruguay", flag: "🇺🇾" },
+      { id: "usa", name: "USA", flag: "🇺🇸" },
+      { id: "jpn", name: "Japan", flag: "🇯🇵" },
+      { id: "kor", name: "South Korea", flag: "🇰🇷" },
+      { id: "aus", name: "Australia", flag: "🇦🇺" },
+      { id: "sui", name: "Switzerland", flag: "🇨🇭" },
+      { id: "mar", name: "Morocco", flag: "🇲🇦" },
+      { id: "egy", name: "Egypt", flag: "🇪🇬" },
+      { id: "sen", name: "Senegal", flag: "🇸🇳" },
+      { id: "tun", name: "Tunisia", flag: "🇹🇳" },
+      { id: "qat", name: "Qatar", flag: "🇶🇦" },
+      { id: "ecu", name: "Ecuador", flag: "🇪🇨" },
+      { id: "rsa", name: "South Africa", flag: "🇿🇦" },
+      { id: "nir", name: "Northern Ireland", flag: "🇳🇫" },
+      { id: "irn", name: "Iran", flag: "🇮🇷" },
+      { id: "ksa", name: "Saudi Arabia", flag: "🇸🇦" },
+    ];
+    return knockoutTeams.find((t) => t.id === teamId);
   };
 
   const emojiToCodepoint = (emoji: string) =>
@@ -203,7 +236,9 @@ export default function SummaryPage() {
     `https://twemoji.maxcdn.com/v/latest/72x72/${emojiToCodepoint(emoji)}.png`;
 
   const groupPredictions = predictions.filter((p) => p.type === "GROUP");
+  const knockoutPredictions = predictions.filter((p) => p.type === "KNOCKOUT");
   const hasAnyPredictions = groupPredictions.length > 0;
+  const hasKnockoutPredictions = knockoutPredictions.length > 0;
 
   if (status === "loading" || isLoading) {
     return (
@@ -358,32 +393,74 @@ export default function SummaryPage() {
               </div>
             </div>
 
-            {/* Knockout Predictions - Coming Soon */}
+            {/* Knockout Predictions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
               <div className="wc-card">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#2B3FE8]/20 flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#2B3FE8]">
-                      <path d="M8 21h8M12 17v4M7 4h10v9a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#2B3FE8]/20 flex items-center justify-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#2B3FE8]">
+                        <path d="M8 21h8M12 17v4M7 4h10v9a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="font-display text-h4 text-white">Knockout Stage</h2>
+                      <p className="text-gray-400 text-body">Round of 32 to Final</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="font-display text-h4 text-white">Knockout Stage</h2>
-                    <p className="text-gray-400 text-body">Round of 32 to Final</p>
+                  {hasKnockoutPredictions && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/knockouts")}
+                      className="wc-btn-secondary text-base py-2 px-4"
+                    >
+                      Edit Predictions
+                    </motion.button>
+                  )}
+                </div>
+                {hasKnockoutPredictions ? (
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {knockoutPredictions.slice(0, 8).map((pred) => {
+                        const winner = pred.teamOrder[0];
+                        const team = getTeamById(winner);
+                        if (!team) return null;
+                        return (
+                          <div key={pred.id} className="flex items-center gap-2 p-2 bg-[#2B3FE8]/10 rounded-lg border border-[#2B3FE8]/20">
+                            <img
+                              src={getEmojiUrl(team.flag)}
+                              alt={`${team.name} flag`}
+                              className="w-5 h-4 rounded-sm"
+                            />
+                            <span className="text-sm text-white truncate">{team.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3 text-center">
+                      {knockoutPredictions.length} predictions made
+                    </p>
                   </div>
-                </div>
-                <div className="p-6 bg-white/5 rounded-2xl border border-white/10 text-center">
-                  <p className="text-body-large text-gray-300 mb-2">
-                    Knockout predictions will be available in Phase 2
-                  </p>
-                  <p className="text-body text-gray-500">
-                    Stay tuned for the Round of 32, Quarter Finals, Semi Finals, and Final predictions!
-                  </p>
-                </div>
+                ) : (
+                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10 text-center">
+                    <p className="text-body-large text-gray-300 mb-2">
+                      Make your knockout predictions now
+                    </p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/knockouts")}
+                      className="wc-btn-primary text-base py-3 px-6"
+                    >
+                      Predict Winners
+                    </motion.button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
