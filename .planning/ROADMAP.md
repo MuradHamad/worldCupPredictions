@@ -24,7 +24,7 @@
 - SUM-04: Summary shows predicted knockout bracket progression
 
 ### Plans
-- [ ] 01-PLAN.md — Add POST endpoint for predictions + create /summary page
+- [x] 01-PLAN.md — Add POST endpoint for predictions + create /summary page
 
 ### Success Criteria
 1. User can access /summary page from dashboard
