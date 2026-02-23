@@ -23,6 +23,9 @@
 - SUM-03: Summary displays predicted winner for each group
 - SUM-04: Summary shows predicted knockout bracket progression
 
+### Plans
+- [ ] 01-PLAN.md — Add POST endpoint for predictions + create /summary page
+
 ### Success Criteria
 1. User can access /summary page from dashboard
 2. Group predictions shown with team rankings
