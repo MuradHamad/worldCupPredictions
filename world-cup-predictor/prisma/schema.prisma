@@ -117,3 +117,18 @@ model Prediction {
   @@unique([userId, type, knockoutRound, matchId])
   @@map("predictions")
 }
+
+model MatchResult {
+  id            String   @id @default(cuid())
+  matchId       String   @unique @map("match_id") // e.g., "r32-1", "group-A-1"
+  round         String   // "GROUP", "ROUND_OF_32", "ROUND_OF_16", "QUARTER_FINAL", "SEMI_FINAL", "THIRD_PLACE", "FINAL"
+  groupName     String?  @map("group_name") // For group stage matches (A-L)
+  winnerTeamId  String?  @map("winner_team_id") // The team that won
+  team1Score    Int?     @map("team1_score") // Optional score
+  team2Score    Int?     @map("team2_score") // Optional score
+  isComplete    Boolean  @default(false) @map("is_complete")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("match_results")
+}

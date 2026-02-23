@@ -421,6 +421,16 @@ export default function DashboardPage() {
                           </p>
                         )}
                       </div>
+                      
+                      {/* View Full Leaderboard Link */}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => router.push("/leaderboard")}
+                        className="w-full mt-4 py-2 text-center text-[#2B3FE8] hover:text-[#3B4FF8] text-sm font-display transition-colors"
+                      >
+                        View Full Leaderboard →
+                      </motion.button>
                     </div>
                   ))}
                 </div>
