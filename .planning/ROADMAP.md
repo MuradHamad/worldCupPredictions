@@ -67,6 +67,9 @@
 - 2026 format: 12 groups → 8 third-place advance → knockout
 - Store predictions as matchId → winnerTeamId mapping
 
+### Plans
+- [ ] 02-01-PLAN.md — Create /knockouts page with visual bracket and prediction interface
+
 ---
 
 ## Phase 3: Scoring System

@@ -8,13 +8,14 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can compete with friends by making tournament predictions and tracking accuracy through a shared leaderboard system.
 
-**Current focus:** Phase 1 - Summary Page (COMPLETE)
+**Current focus:** Phase 2 - Knockout Bracket (Planning)
 
 ## Progress
 
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | Summary Page | Complete |
+| 2 | Knockout Bracket | Planned |
 | 2 | Knockout Bracket | Not Started |
 | 3 | Scoring System | Not Started |
 | 4 | Data Integration | Not Started |
