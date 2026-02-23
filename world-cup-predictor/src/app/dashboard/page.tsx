@@ -179,16 +179,28 @@ export default function DashboardPage() {
             <div className="wc-card h-full">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="font-display text-h3 text-white">Your Predictions</h2>
-                {hasAnyPredictions && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/groups")}
-                    className="wc-btn-secondary text-base py-3 px-6"
-                  >
-                    Edit Predictions
-                  </motion.button>
-                )}
+                <div className="flex gap-3">
+                  {hasAnyPredictions && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/summary")}
+                      className="wc-btn-secondary text-base py-3 px-6"
+                    >
+                      Summary
+                    </motion.button>
+                  )}
+                  {hasAnyPredictions && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/groups")}
+                      className="wc-btn-primary text-base py-3 px-6"
+                    >
+                      Edit Predictions
+                    </motion.button>
+                  )}
+                </div>
               </div>
 
               {!hasAnyPredictions ? (
