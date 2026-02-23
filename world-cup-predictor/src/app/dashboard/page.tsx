@@ -255,7 +255,15 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Knockout Predictions Status */}
-                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push("/knockouts")}
+                    className="p-6 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-[#2B3FE8]/20 flex items-center justify-center">
@@ -279,12 +287,16 @@ export default function DashboardPage() {
                         <span className="wc-badge wc-badge-warning">Pending</span>
                       )}
                     </div>
-                    {hasKnockoutPredictions && (
+                    {hasKnockoutPredictions ? (
                       <p className="text-body-large text-gray-400">
                         {predictions.filter(p => p.type === "KNOCKOUT").length} rounds predicted
                       </p>
+                    ) : (
+                      <p className="text-body text-gray-400">
+                        Click to predict winners
+                      </p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Prediction Summary */}
                   {hasGroupPredictions && (
