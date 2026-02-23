@@ -8,15 +8,14 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can compete with friends by making tournament predictions and tracking accuracy through a shared leaderboard system.
 
-**Current focus:** Phase 2 - Knockout Bracket (Planning)
+**Current focus:** Phase 3 - Scoring System (Planning)
 
 ## Progress
 
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | Summary Page | Complete |
-| 2 | Knockout Bracket | Planned |
-| 2 | Knockout Bracket | Not Started |
+| 2 | Knockout Bracket | Complete |
 | 3 | Scoring System | Not Started |
 | 4 | Data Integration | Not Started |
 | 5 | Prediction Management | Not Started |
@@ -31,10 +30,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Decisions
 
 - Phase 1 complete - POST predictions endpoint and summary page implemented
+- Phase 2 complete - Knockout bracket page with visual display and prediction interface implemented
 
 ## Next Step
 
-Run `/gsd-execute-phase 2` to start Phase 2 implementation.
+Run `/gsd-execute-phase 3` to start Phase 3 implementation.
 
 ---
 *State updated: 2026-02-23*

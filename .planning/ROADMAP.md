@@ -68,7 +68,7 @@
 - Store predictions as matchId → winnerTeamId mapping
 
 ### Plans
-- [ ] 02-01-PLAN.md — Create /knockouts page with visual bracket and prediction interface
+- [x] 02-01-PLAN.md — Create /knockouts page with visual bracket and prediction interface
 
 ---
 
