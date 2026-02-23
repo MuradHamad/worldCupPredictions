@@ -13,8 +13,8 @@ interface Team {
 interface Match {
   id: string;
   round: string;
-  team1: Team | null;
-  team2: Team | null;
+  team1: Team | null | undefined;
+  team2: Team | null | undefined;
   winner: string | null;
 }
 
@@ -123,8 +123,8 @@ export default function KnockoutsPage() {
       
       return {
         ...roundOf16[idx],
-        team1: actualTeam1 || (team1 ? { id: winner1 || "", ...team1 } : null),
-        team2: actualTeam2 || (team2 ? { id: winner2 || "", ...team2 } : null),
+        team1: actualTeam1 || team2,
+        team2: actualTeam2 || team1,
         winner: selections[roundOf16[idx].id] || null
       };
     });
@@ -140,8 +140,8 @@ export default function KnockoutsPage() {
       const r16Match1 = r16[match1Idx];
       const r16Match2 = r16[match2Idx];
       
-      const team1 = winner1 && r16Match1 ? (r16Match1.team1?.id === winner1 ? r16Match1.team1 : r16Match1.team2) : null;
-      const team2 = winner2 && r16Match2 ? (r16Match2.team1?.id === winner2 ? r16Match2.team1 : r16Match2.team2) : null;
+      const team1 = winner1 && r16Match1 ? (r16Match1.team1?.id === winner1 ? r16Match1.team1 : r16Match1.team2) ?? null : null;
+      const team2 = winner2 && r16Match2 ? (r16Match2.team1?.id === winner2 ? r16Match2.team1 : r16Match2.team2) ?? null : null;
       
       return {
         ...quarterFinals[idx],
@@ -161,8 +161,8 @@ export default function KnockoutsPage() {
       const qfMatch1 = qf[match1Idx];
       const qfMatch2 = qf[match2Idx];
       
-      const team1 = winner1 && qfMatch1 ? (qfMatch1.team1?.id === winner1 ? qfMatch1.team1 : qfMatch1.team2) : null;
-      const team2 = winner2 && qfMatch2 ? (qfMatch2.team1?.id === winner2 ? qfMatch2.team1 : qfMatch2.team2) : null;
+      const team1 = winner1 && qfMatch1 ? (qfMatch1.team1?.id === winner1 ? qfMatch1.team1 : qfMatch1.team2) ?? null : null;
+      const team2 = winner2 && qfMatch2 ? (qfMatch2.team1?.id === winner2 ? qfMatch2.team1 : qfMatch2.team2) ?? null : null;
       
       return {
         ...semiFinals[idx],
@@ -173,18 +173,18 @@ export default function KnockoutsPage() {
     });
     
     // Third place - from SF losers
-    const third = [{
+    const third: Match[] = [{
       ...thirdPlace[0],
-      team1: sf[0]?.winner ? null : (sf[0]?.team2 || null),
-      team2: sf[1]?.winner ? null : (sf[1]?.team2 || null),
+      team1: sf[0]?.winner ? null : (sf[0]?.team2 ?? null),
+      team2: sf[1]?.winner ? null : (sf[1]?.team2 ?? null),
       winner: selections["third"] || null
     }];
     
     // Final - auto-advance from SF
-    const final = [{
+    const final: Match[] = [{
       ...finalMatch[0],
-      team1: sf[0]?.winner ? (sf[0].team1?.id === sf[0].winner ? sf[0].team1 : sf[0].team2) : null,
-      team2: sf[1]?.winner ? (sf[1].team1?.id === sf[1].winner ? sf[1].team1 : sf[1].team2) : null,
+      team1: sf[0]?.winner ? (sf[0].team1?.id === sf[0].winner ? sf[0].team1 : sf[0].team2) ?? null : null,
+      team2: sf[1]?.winner ? (sf[1].team1?.id === sf[1].winner ? sf[1].team1 : sf[1].team2) ?? null : null,
       winner: selections["final"] || null
     }];
     
