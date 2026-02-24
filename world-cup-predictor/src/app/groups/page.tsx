@@ -199,6 +199,8 @@ export default function GroupsPage() {
         teamOrder: predictions[group.id] || group.teams.map(t => t.id),
       }));
 
+      console.log("Saving predictions:", allPredictions);
+
       const response = await fetch("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,14 +209,17 @@ export default function GroupsPage() {
         }),
       });
 
+      const result = await response.json();
+      console.log("Save response:", response.status, result);
+
       if (response.ok) {
         router.push("/summary");
       } else {
-        const error = await response.json();
-        console.error("Save failed:", error);
+        alert("Failed to save: " + (result.error || "Unknown error"));
       }
     } catch (error) {
       console.error("Error saving predictions:", error);
+      alert("Error saving predictions: " + error);
     } finally {
       setIsSaving(false);
     }

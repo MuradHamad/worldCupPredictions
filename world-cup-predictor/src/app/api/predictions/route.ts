@@ -40,13 +40,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    console.log("Session:", session);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log("Unauthorized - no session or user id");
+      return NextResponse.json({ error: "Unauthorized", details: "No valid session" }, { status: 401 });
     }
 
     const body = await req.json();
     const { predictions } = body;
+    console.log("Predictions received:", predictions);
 
     if (!predictions || !Array.isArray(predictions)) {
       return NextResponse.json(
@@ -56,6 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    console.log("User ID:", userId);
 
     // Process each prediction
     for (const prediction of predictions) {
