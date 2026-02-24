@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -149,9 +149,39 @@ export default function GroupsPage() {
   const [draggedItem, setDraggedItem] = useState<{ groupId: string; index: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
 
   const allGroupsCompleted = completedGroups.size === groups.length;
+
+  // Load existing predictions on mount
+  useEffect(() => {
+    async function loadPredictions() {
+      try {
+        const res = await fetch("/api/predictions");
+        const data = await res.json();
+        if (data.predictions && Array.isArray(data.predictions)) {
+          const loadedPredictions: Record<string, string[]> = {};
+          const loadedGroups = new Set<string>();
+          data.predictions.forEach((p: { groupName: string; teamOrder: string }) => {
+            if (p.groupName) {
+              loadedPredictions[p.groupName] = typeof p.teamOrder === 'string' 
+                ? p.teamOrder.split(',') 
+                : p.teamOrder;
+              loadedGroups.add(p.groupName);
+            }
+          });
+          setPredictions(loadedPredictions);
+          setCompletedGroups(loadedGroups);
+        }
+      } catch (error) {
+        console.error("Error loading predictions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadPredictions();
+  }, []);
 
   const handleGroupDone = (groupId: string) => {
     setCompletedGroups(prev => new Set([...prev, groupId]));
@@ -162,20 +192,26 @@ export default function GroupsPage() {
     
     setIsSaving(true);
     try {
+      // Build predictions for all groups (use existing order or default)
+      const allPredictions = groups.map(group => ({
+        type: "GROUP",
+        groupName: group.id,
+        teamOrder: predictions[group.id] || group.teams.map(t => t.id),
+      }));
+
       const response = await fetch("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          predictions: Object.entries(predictions).map(([groupId, teamOrder]) => ({
-            type: "GROUP",
-            groupName: groupId,
-            teamOrder,
-          })),
+          predictions: allPredictions,
         }),
       });
 
       if (response.ok) {
         router.push("/summary");
+      } else {
+        const error = await response.json();
+        console.error("Save failed:", error);
       }
     } catch (error) {
       console.error("Error saving predictions:", error);
@@ -237,6 +273,17 @@ export default function GroupsPage() {
     if (!order) return group.teams;
     return order.map(id => group.teams.find(t => t.id === id)!).filter(Boolean);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#2B3FE8] border-t-transparent"></div>
+          <p className="text-gray-400 text-body-large">Loading predictions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-page py-12">
