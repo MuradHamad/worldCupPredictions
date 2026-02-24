@@ -2,13 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { fetchMatchResults, syncMatchResultsToDatabase } from "@/lib/api/matches";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const round = searchParams.get("round");
     const groupName = searchParams.get("groupName");
+    const source = searchParams.get("source") || "local"; // 'local' or 'external'
 
+    // Handle external source
+    if (source === "external") {
+      const externalMatches = await fetchMatchResults({ round: round as any });
+      return NextResponse.json({ 
+        source: "external",
+        matches: externalMatches 
+      });
+    }
+
+    // Default: local database
     const where: Record<string, unknown> = {};
     
     if (round) {
@@ -23,7 +35,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ round: "asc" }, { matchId: "asc" }],
     });
 
-    return NextResponse.json({ matchResults });
+    return NextResponse.json({ source: "local", matchResults });
   } catch (error) {
     console.error("Error fetching match results:", error);
     return NextResponse.json(
@@ -42,7 +54,25 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { matchId, round, groupName, winnerTeamId, team1Score, team2Score, isComplete } = body;
+    const { action, matchId, round, groupName, winnerTeamId, team1Score, team2Score, isComplete } = body;
+
+    // Handle sync action (admin/room creator can sync from external API)
+    if (action === "sync") {
+      try {
+        const result = await syncMatchResultsToDatabase();
+        return NextResponse.json({ 
+          success: true, 
+          message: `Synced from external API`,
+          ...result
+        });
+      } catch (syncError) {
+        console.error("Error syncing from external API:", syncError);
+        return NextResponse.json(
+          { error: "Failed to sync from external API" },
+          { status: 500 }
+        );
+      }
+    }
 
     if (!matchId || !round) {
       return NextResponse.json(
