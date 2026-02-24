@@ -215,7 +215,7 @@ export default function GroupsPage() {
       if (response.ok) {
         router.push("/summary");
       } else {
-        alert("Failed to save: " + (result.error || "Unknown error"));
+        alert("Failed to save: " + JSON.stringify(result));
       }
     } catch (error) {
       console.error("Error saving predictions:", error);

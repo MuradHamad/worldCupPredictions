@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error saving predictions:", error);
     return NextResponse.json(
-      { error: "Failed to save predictions" },
+      { error: "Failed to save predictions", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
