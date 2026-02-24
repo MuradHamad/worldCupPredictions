@@ -61,6 +61,19 @@ export async function POST(req: NextRequest) {
     const userId = session.user.id;
     console.log("User ID:", userId);
 
+    // Check if user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    console.log("User exists:", userExists);
+
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "User not found in database. Please sign out and sign in again." },
+        { status: 400 }
+      );
+    }
+
     // Process each prediction
     for (const prediction of predictions) {
       const { type, groupName, knockoutRound, teamOrder } = prediction;
