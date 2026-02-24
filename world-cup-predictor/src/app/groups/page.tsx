@@ -232,28 +232,6 @@ export default function GroupsPage() {
     setDraggedItem(null);
   };
 
-  const handleSave = async () => {
-    try {
-      const response = await fetch("/api/predictions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          predictions: Object.entries(predictions).map(([groupId, teamOrder]) => ({
-            type: "GROUP",
-            groupName: groupId,
-            teamOrder,
-          })),
-        }),
-      });
-
-      if (response.ok) {
-        router.push("/summary");
-      }
-    } catch (error) {
-      console.error("Error saving predictions:", error);
-    }
-  };
-
   const getOrderedTeams = (group: Group) => {
     const order = predictions[group.id];
     if (!order) return group.teams;
