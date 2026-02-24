@@ -9,5 +9,9 @@
     "plan_check": true,
     "verifier": true,
     "auto_advance": true
+  },
+  "tournament": {
+    "startDate": "2026-06-11T20:00:00Z",
+    "predictionDeadline": "2026-06-11T19:00:00Z"
   }
 }
