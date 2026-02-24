@@ -98,6 +98,9 @@
 - Knockout winner: 5 points (R32), 10 (R16), 15 (QF), 25 (SF), 50 (Final)
 - Third place: 20 points
 
+### Plans
+- [x] 03-01-PLAN.md — Implement scoring system with MatchResult model, scoring API, and leaderboard
+
 ---
 
 ## Phase 4: Data Integration
