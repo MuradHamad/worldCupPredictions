@@ -5,6 +5,9 @@ import { useSession, signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import CountdownTimer from "@/components/CountdownTimer";
+import { PREDICTION_DEADLINE, arePredictionsOpen } from "@/lib/config";
+
 interface Prediction {
   id: string;
   type: string;
@@ -37,6 +40,7 @@ export default function DashboardPage() {
   const [rooms, setRooms] = useState<RoomLeaderboard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -177,6 +181,14 @@ export default function DashboardPage() {
             className="lg:col-span-3"
           >
             <div className="wc-card h-full">
+              {/* Countdown Timer */}
+              <div className="mb-6">
+                <CountdownTimer
+                  targetDate={PREDICTION_DEADLINE}
+                  onLockChange={setPredictionsLocked}
+                />
+              </div>
+
               <div className="flex items-center justify-between mb-8">
                 <h2 className="font-display text-h3 text-white">Your Predictions</h2>
                 <div className="flex gap-3">
@@ -190,7 +202,7 @@ export default function DashboardPage() {
                       Summary
                     </motion.button>
                   )}
-                  {hasAnyPredictions && (
+                  {hasAnyPredictions && !predictionsLocked && (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -199,6 +211,11 @@ export default function DashboardPage() {
                     >
                       Edit Predictions
                     </motion.button>
+                  )}
+                  {hasAnyPredictions && predictionsLocked && (
+                    <div className="wc-btn-disabled text-base py-3 px-6 cursor-not-allowed">
+                      Locked
+                    </div>
                   )}
                 </div>
               </div>
@@ -211,14 +228,20 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <p className="text-body-large text-gray-400 mb-8">You haven&apos;t made any predictions yet</p>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/groups")}
-                    className="wc-btn-primary"
-                  >
-                    Make Predictions
-                  </motion.button>
+                  {!predictionsLocked ? (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/groups")}
+                      className="wc-btn-primary"
+                    >
+                      Make Predictions
+                    </motion.button>
+                  ) : (
+                    <div className="wc-btn-disabled cursor-not-allowed">
+                      Predictions Locked
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

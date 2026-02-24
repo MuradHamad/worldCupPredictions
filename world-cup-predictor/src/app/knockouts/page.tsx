@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import CountdownTimer from "@/components/CountdownTimer";
+import { PREDICTION_DEADLINE, arePredictionsOpen } from "@/lib/config";
+
 interface Team {
   id: string;
   name: string;
@@ -95,6 +98,7 @@ export default function KnockoutsPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
   
   // Bracket state - store winners for each match
   const [selections, setSelections] = useState<Record<string, string>>({});
@@ -261,13 +265,13 @@ export default function KnockoutsPage() {
       <div key={match.id} className="flex flex-col gap-1">
         {/* Team 1 */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => match.team1 && handleSelectWinner(match.id, match.round, match.team1!)}
-          disabled={!match.team1}
+          whileHover={predictionsLocked ? {} : { scale: 1.02 }}
+          whileTap={predictionsLocked ? {} : { scale: 0.98 }}
+          onClick={() => !predictionsLocked && match.team1 && handleSelectWinner(match.id, match.round, match.team1!)}
+          disabled={!match.team1 || predictionsLocked}
           className={`
             flex items-center gap-2 p-2 rounded-lg border transition-all min-h-[44px]
-            ${!match.team1 ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+            ${!match.team1 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
             ${isSelected1 
               ? "bg-[#2B3FE8]/20 border-[#2B3FE8] shadow-[0_0_12px_rgba(43,63,232,0.3)]" 
               : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
@@ -291,13 +295,13 @@ export default function KnockoutsPage() {
         
         {/* Team 2 */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => match.team2 && handleSelectWinner(match.id, match.round, match.team2!)}
-          disabled={!match.team2}
+          whileHover={predictionsLocked ? {} : { scale: 1.02 }}
+          whileTap={predictionsLocked ? {} : { scale: 0.98 }}
+          onClick={() => !predictionsLocked && match.team2 && handleSelectWinner(match.id, match.round, match.team2!)}
+          disabled={!match.team2 || predictionsLocked}
           className={`
             flex items-center gap-2 p-2 rounded-lg border transition-all min-h-[44px]
-            ${!match.team2 ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+            ${!match.team2 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
             ${isSelected2 
               ? "bg-[#2B3FE8]/20 border-[#2B3FE8] shadow-[0_0_12px_rgba(43,63,232,0.3)]" 
               : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
@@ -367,6 +371,14 @@ export default function KnockoutsPage() {
             Tap to select winners for each match. Winners automatically advance to the next round.
           </p>
         </motion.div>
+
+        {/* Countdown Timer */}
+        <div className="mb-8 px-4">
+          <CountdownTimer
+            targetDate={PREDICTION_DEADLINE}
+            onLockChange={setPredictionsLocked}
+          />
+        </div>
 
         {/* Bracket Container - Horizontal Scroll */}
         <div className="overflow-x-auto pb-4 px-4">
@@ -491,11 +503,13 @@ export default function KnockoutsPage() {
                 {bracket.final[0].team1 && bracket.final[0].team2 ? (
                   <div className="flex flex-col gap-1">
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSelectWinner("final", "final", bracket.final[0].team1!)}
+                      whileHover={predictionsLocked ? {} : { scale: 1.02 }}
+                      whileTap={predictionsLocked ? {} : { scale: 0.98 }}
+                      onClick={() => !predictionsLocked && handleSelectWinner("final", "final", bracket.final[0].team1!)}
+                      disabled={predictionsLocked}
                       className={`
                         flex items-center gap-2 p-2 rounded-lg border transition-all
+                        ${predictionsLocked ? "opacity-50 cursor-not-allowed" : ""}
                         ${selections["final"] === bracket.final[0].team1?.id 
                           ? "bg-[#F5E642]/20 border-[#F5E642] shadow-[0_0_12px_rgba(245,230,66,0.3)]" 
                           : "bg-white/5 border-white/10 hover:bg-white/10"}
@@ -505,11 +519,13 @@ export default function KnockoutsPage() {
                       <span className="text-xs text-white">{bracket.final[0].team1.name}</span>
                     </motion.button>
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSelectWinner("final", "final", bracket.final[0].team2!)}
+                      whileHover={predictionsLocked ? {} : { scale: 1.02 }}
+                      whileTap={predictionsLocked ? {} : { scale: 0.98 }}
+                      onClick={() => !predictionsLocked && handleSelectWinner("final", "final", bracket.final[0].team2!)}
+                      disabled={predictionsLocked}
                       className={`
                         flex items-center gap-2 p-2 rounded-lg border transition-all
+                        ${predictionsLocked ? "opacity-50 cursor-not-allowed" : ""}
                         ${selections["final"] === bracket.final[0].team2?.id 
                           ? "bg-[#F5E642]/20 border-[#F5E642] shadow-[0_0_12px_rgba(245,230,66,0.3)]" 
                           : "bg-white/5 border-white/10 hover:bg-white/10"}

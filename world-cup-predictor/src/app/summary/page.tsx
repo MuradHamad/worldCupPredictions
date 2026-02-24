@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import CountdownTimer from "@/components/CountdownTimer";
+import { PREDICTION_DEADLINE, arePredictionsOpen } from "@/lib/config";
+
 interface Team {
   id: string;
   name: string;
@@ -154,6 +157,7 @@ export default function SummaryPage() {
   const router = useRouter();
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -276,7 +280,7 @@ export default function SummaryPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <h1 className="font-display text-h2 text-white mb-4">
             Your Predictions
@@ -285,6 +289,14 @@ export default function SummaryPage() {
             Review your group stage predictions. Predicted winners are highlighted.
           </p>
         </motion.div>
+
+        {/* Countdown Timer */}
+        <div className="mb-8">
+          <CountdownTimer
+            targetDate={PREDICTION_DEADLINE}
+            onLockChange={setPredictionsLocked}
+          />
+        </div>
 
         {!hasAnyPredictions ? (
           /* Empty State */

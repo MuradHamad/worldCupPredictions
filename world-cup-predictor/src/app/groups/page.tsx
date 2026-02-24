@@ -4,6 +4,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import CountdownTimer from "@/components/CountdownTimer";
+import { PREDICTION_DEADLINE, arePredictionsOpen } from "@/lib/config";
+
 interface Team {
   id: string;
   name: string;
@@ -142,8 +145,44 @@ const groups: Group[] = [
 export default function GroupsPage() {
   const router = useRouter();
   const [predictions, setPredictions] = useState<Record<string, string[]>>({});
+  const [completedGroups, setCompletedGroups] = useState<Set<string>>(new Set());
   const [draggedItem, setDraggedItem] = useState<{ groupId: string; index: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
+
+  const allGroupsCompleted = completedGroups.size === groups.length;
+
+  const handleGroupDone = (groupId: string) => {
+    setCompletedGroups(prev => new Set([...prev, groupId]));
+  };
+
+  const handleSave = async () => {
+    if (!allGroupsCompleted || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          predictions: Object.entries(predictions).map(([groupId, teamOrder]) => ({
+            type: "GROUP",
+            groupName: groupId,
+            teamOrder,
+          })),
+        }),
+      });
+
+      if (response.ok) {
+        router.push("/summary");
+      }
+    } catch (error) {
+      console.error("Error saving predictions:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const emojiToCodepoint = (emoji: string) =>
     Array.from(emoji)
@@ -256,6 +295,14 @@ export default function GroupsPage() {
           </p>
         </motion.div>
 
+        {/* Countdown Timer */}
+        <div className="mb-8">
+          <CountdownTimer
+            targetDate={PREDICTION_DEADLINE}
+            onLockChange={setPredictionsLocked}
+          />
+        </div>
+
         {/* Groups Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
           {groups.map((group, groupIndex) => (
@@ -281,13 +328,13 @@ export default function GroupsPage() {
                     key={team.id}
                     data-group-id={group.id}
                     data-index={index}
-                    onPointerDown={(e) => handlePointerDown(group.id, index, e)}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerUp}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 cursor-move hover:bg-white/10 hover:border-white/20 transition-all touch-none select-none ${isDragging ? "cursor-grabbing" : ""}`}
+                    onPointerDown={predictionsLocked ? undefined : (e) => handlePointerDown(group.id, index, e)}
+                    onPointerMove={predictionsLocked ? undefined : handlePointerMove}
+                    onPointerUp={predictionsLocked ? undefined : handlePointerUp}
+                    onPointerCancel={predictionsLocked ? undefined : handlePointerUp}
+                    whileHover={predictionsLocked ? {} : { scale: 1.02 }}
+                    whileTap={predictionsLocked ? {} : { scale: 0.98 }}
+                    className={`flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 ${predictionsLocked ? 'cursor-not-allowed opacity-60' : 'cursor-move hover:bg-white/10 hover:border-white/20'} transition-all touch-none select-none ${isDragging ? "cursor-grabbing" : ""}`}
                   >
                     <span className="font-display text-xl text-gray-500 w-8">
                       {index + 1}
@@ -299,12 +346,35 @@ export default function GroupsPage() {
                       loading="lazy"
                     />
                     <span className="text-body-large text-white flex-1">{team.name}</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
-                      <path d="M8 6h12M4 12h16M8 18h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
+                    {!predictionsLocked && (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
+                        <path d="M8 6h12M4 12h16M8 18h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    )}
                   </motion.div>
                 ))}
               </div>
+
+              {/* Group Done Button */}
+              {!predictionsLocked && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  {completedGroups.has(group.id) ? (
+                    <div className="flex items-center justify-center gap-2 py-2 bg-green-500/20 border border-green-500/30 rounded-xl">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-400">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-green-400 font-display text-sm">Done</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleGroupDone(group.id)}
+                      className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-gray-400 hover:text-white font-display text-sm transition-all"
+                    >
+                      Mark as Done
+                    </button>
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
@@ -314,16 +384,28 @@ export default function GroupsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="flex justify-end"
+          className="flex flex-col items-end gap-4"
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSave}
-            className="wc-btn-primary px-16"
-          >
-            Done
-          </motion.button>
+          {/* Progress indicator */}
+          <div className="text-gray-400 font-display text-sm">
+            {completedGroups.size} / {groups.length} groups completed
+          </div>
+          
+          {predictionsLocked ? (
+            <div className="wc-btn-disabled px-16 cursor-not-allowed">
+              Predictions Locked
+            </div>
+          ) : (
+            <motion.button
+              whileHover={allGroupsCompleted && !isSaving ? { scale: 1.05 } : {}}
+              whileTap={allGroupsCompleted && !isSaving ? { scale: 0.95 } : {}}
+              onClick={handleSave}
+              disabled={!allGroupsCompleted || isSaving}
+              className={`wc-btn-primary px-16 ${!allGroupsCompleted || isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isSaving ? 'Saving...' : 'Done'}
+            </motion.button>
+          )}
         </motion.div>
       </div>
     </div>
