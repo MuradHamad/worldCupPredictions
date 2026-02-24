@@ -124,6 +124,9 @@
 - **BALLDONTLIE**: Free tier available, specialized for WC2026
 - Fallback: Manual result entry for MVP
 
+### Plans
+- [x] 04-01-PLAN.md — Implement data integration with teams seeding, API service, Zod validation, and caching
+
 ---
 
 ## Phase 5: Prediction Management
