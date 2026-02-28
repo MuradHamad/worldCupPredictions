@@ -213,7 +213,7 @@ export default function GroupsPage() {
       console.log("Save response:", response.status, result);
 
       if (response.ok) {
-        router.push("/summary");
+        router.push("/thirds");
       } else {
         alert("Failed to save: " + JSON.stringify(result));
       }

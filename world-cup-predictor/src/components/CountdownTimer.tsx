@@ -46,7 +46,7 @@ export default function CountdownTimer({
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
     calculateTimeRemaining(targetDate)
   );
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => calculateTimeRemaining(targetDate).total <= 0);
 
   const updateTimer = useCallback(() => {
     const newTimeRemaining = calculateTimeRemaining(targetDate);
@@ -60,14 +60,16 @@ export default function CountdownTimer({
   }, [targetDate, isLocked, onLockChange]);
 
   useEffect(() => {
-    // Initial calculation
-    updateTimer();
-
+    // Notify parent on mount if locked
+    if (isLocked) {
+      onLockChange?.(true);
+    }
+    
     // Update every second
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [updateTimer]);
+  }, [updateTimer, isLocked, onLockChange]);
 
   // If predictions are locked
   if (isLocked || timeRemaining.total <= 0) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { RoundType } from "@/lib/api/schemas";
 import { fetchMatchResults, syncMatchResultsToDatabase } from "@/lib/api/matches";
 
 export async function GET(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     // Handle external source
     if (source === "external") {
-      const externalMatches = await fetchMatchResults({ round: round as any });
+      const externalMatches = await fetchMatchResults({ round: round as RoundType | undefined });
       return NextResponse.json({ 
         source: "external",
         matches: externalMatches 

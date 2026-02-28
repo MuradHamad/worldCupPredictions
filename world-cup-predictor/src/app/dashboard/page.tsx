@@ -97,7 +97,9 @@ export default function DashboardPage() {
 
   const hasGroupPredictions = predictions.some(p => p.type === "GROUP");
   const hasKnockoutPredictions = predictions.some(p => p.type === "KNOCKOUT");
+  const hasThirdsPredictions = predictions.some(p => p.type === "THIRDS");
   const hasAnyPredictions = predictions.length > 0;
+  const hasCompleteGroupStage = hasGroupPredictions && hasThirdsPredictions;
 
   return (
     <div className="min-h-screen bg-page">
@@ -206,7 +208,7 @@ export default function DashboardPage() {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => router.push("/groups")}
+                      onClick={() => router.push(hasGroupPredictions && !hasThirdsPredictions ? "/thirds" : "/groups")}
                       className="wc-btn-primary text-base py-3 px-6"
                     >
                       Edit Predictions
@@ -276,6 +278,48 @@ export default function DashboardPage() {
                       </p>
                     )}
                   </div>
+
+                  {/* Third Place Picks Status */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push("/thirds")}
+                    className="p-6 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-[#F5E642]/20 flex items-center justify-center">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#F5E642]">
+                            <path d="M12 15l-2 5 2-1 2 1-2-5zM12 2l2 5H10l2-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-display text-xl text-white">Best 8 Thirds</h3>
+                          <p className="text-gray-400">Select 8 third-placed teams</p>
+                        </div>
+                      </div>
+                      {hasThirdsPredictions ? (
+                        <span className="wc-badge wc-badge-success">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Done
+                        </span>
+                      ) : hasGroupPredictions ? (
+                        <span className="wc-badge wc-badge-warning">Pending</span>
+                      ) : (
+                        <span className="wc-badge bg-gray-500/20 text-gray-400 border border-gray-500/30">Locked</span>
+                      )}
+                    </div>
+                    {hasThirdsPredictions && (
+                      <p className="text-body-large text-gray-400">
+                        8 third-placed teams selected
+                      </p>
+                    )}
+                  </motion.div>
 
                   {/* Knockout Predictions Status */}
                   <motion.div

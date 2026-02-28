@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Check exact ranking (full team order)
-        const predictedOrder = pred.teamOrder.split(",");
+        // const predictedOrder = pred.teamOrder.split(",");
         // For now, we only check winner - full ranking would require more complex result storage
       }
 
