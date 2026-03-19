@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 
 import CountdownTimer from "@/components/CountdownTimer";
 import { PREDICTION_DEADLINE, arePredictionsOpen } from "@/lib/config";
-import {
-  resolveThirdPlaceBracket,
-  type GroupLetter,
-} from "@/lib/annexe-c";
+import { resolveThirdPlaceBracket, type GroupLetter } from "@/lib/annexe-c";
 
 interface Team {
   id: string;
@@ -102,11 +99,7 @@ function getTeamFromPosition(
 ): Team | null {
   if (position.startsWith("3rd-")) {
     const matchNum = THIRD_POSITION_TO_MATCH[position];
-    
-    if (!matchNum) {
-      return null;
-    }
-    
+    if (!matchNum) return null;
     const resolved = thirdPlaceMapping[matchNum];
     return resolved?.team || null;
   }
@@ -171,9 +164,6 @@ const allTeamsInGroups: Record<string, Team> = {
   pan: { id: "pan", name: "Panama", flag: "🇵🇦" },
 };
 
-// Round of 32 - will be generated dynamically from qualifiedTeams in getBracket
-
-// Round of 16 - 8 matches (positions correspond to R32 winners)
 const roundOf16: Match[] = [
   { id: "r16-1", round: "r16", team1: null, team2: null, winner: null },
   { id: "r16-2", round: "r16", team1: null, team2: null, winner: null },
@@ -185,7 +175,6 @@ const roundOf16: Match[] = [
   { id: "r16-8", round: "r16", team1: null, team2: null, winner: null },
 ];
 
-// Quarter-finals - 4 matches
 const quarterFinals: Match[] = [
   { id: "qf-1", round: "qf", team1: null, team2: null, winner: null },
   { id: "qf-2", round: "qf", team1: null, team2: null, winner: null },
@@ -193,13 +182,11 @@ const quarterFinals: Match[] = [
   { id: "qf-4", round: "qf", team1: null, team2: null, winner: null },
 ];
 
-// Semi-finals - 2 matches
 const semiFinals: Match[] = [
   { id: "sf-1", round: "sf", team1: null, team2: null, winner: null },
   { id: "sf-2", round: "sf", team1: null, team2: null, winner: null },
 ];
 
-// Third place and Final
 const thirdPlace: Match[] = [
   { id: "third", round: "third", team1: null, team2: null, winner: null },
 ];
@@ -223,13 +210,9 @@ export default function KnockoutsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [predictionsLocked, setPredictionsLocked] = useState(!arePredictionsOpen());
   
-  // Bracket state - store winners for each match
   const [selections, setSelections] = useState<Record<string, string>>({});
-  
-  // Qualified teams from group stage with position info
   const [qualifiedTeams, setQualifiedTeams] = useState<QualifiedTeam[]>([]);
   
-  // Computed third place mapping using Annexe C rules
   const thirdPlaceMapping = useMemo(() => {
     const groupResults = qualifiedTeams.map(qt => ({
       group: qt.group as GroupLetter,
@@ -254,9 +237,7 @@ export default function KnockoutsPage() {
     return result;
   }, [qualifiedTeams]);
 
-  // Computed bracket - auto-advance winners
   const getBracket = useCallback(() => {
-    // Generate Round of 32 using FIFA bracket structure
     const r32Matches: Match[] = [];
     
     for (let i = 1; i <= 16; i++) {
@@ -275,7 +256,6 @@ export default function KnockoutsPage() {
     
     const r32 = r32Matches;
     
-    // Round of 16 - FIFA bracket structure
     const r16 = roundOf16.map((_, idx) => {
       const r16Idx = idx + 1;
       const bracketPos = R16_BRACKET[r16Idx];
@@ -306,7 +286,6 @@ export default function KnockoutsPage() {
       };
     });
     
-    // Quarter-finals - FIFA bracket structure
     const qf = quarterFinals.map((_, idx) => {
       const qfIdx = idx + 1;
       const bracketPos = QF_BRACKET[qfIdx];
@@ -327,7 +306,6 @@ export default function KnockoutsPage() {
       };
     });
     
-    // Semi-finals - FIFA bracket structure
     const sf = semiFinals.map((_, idx) => {
       const sfIdx = idx + 1;
       const bracketPos = SF_BRACKET[sfIdx];
@@ -348,7 +326,6 @@ export default function KnockoutsPage() {
       };
     });
     
-    // Third place - SF losers
     const sf1Loser = sf[0]?.winner ? 
       (sf[0].team1?.id === sf[0].winner ? sf[0].team2 : sf[0].team1) ?? null : null;
     const sf2Loser = sf[1]?.winner ? 
@@ -361,7 +338,6 @@ export default function KnockoutsPage() {
       winner: selections["third"] || null
     }];
     
-    // Final - SF winners
     const sf1Winner = sf[0]?.winner ? 
       (sf[0].team1?.id === sf[0].winner ? sf[0].team1 : sf[0].team2) ?? null : null;
     const sf2Winner = sf[1]?.winner ? 
@@ -388,7 +364,6 @@ export default function KnockoutsPage() {
       const res = await fetch("/api/predictions");
       const data = await res.json();
       
-      // Load existing knockout predictions
       const knockoutPreds = data.predictions?.filter((p: Prediction) => p.type === "KNOCKOUT") || [];
       const newSelections: Record<string, string> = {};
       
@@ -400,7 +375,6 @@ export default function KnockoutsPage() {
       
       setSelections(newSelections);
       
-      // Load GROUP predictions and extract qualified teams with position info
       const groupPreds = data.predictions?.filter((p: Prediction) => p.type === "GROUP") || [];
       const groupOrder: Record<string, string[]> = {};
       
@@ -410,7 +384,6 @@ export default function KnockoutsPage() {
         }
       });
       
-      // Get teams with their group positions (1st, 2nd from each group)
       const qualified: QualifiedTeam[] = [];
       const addedTeamIds = new Set<string>();
       
@@ -430,11 +403,9 @@ export default function KnockoutsPage() {
         }
       });
       
-      // Get third-placed teams that user selected to advance (from THIRDS prediction)
       const thirdsPred = data.predictions?.find((p: Prediction) => p.type === "THIRDS");
       const userSelectedThirdIds = new Set(thirdsPred?.teamOrder || []);
       
-      // Find 3rd place teams from each group that were selected by user
       GROUPS.forEach(groupId => {
         const order = groupOrder[groupId] || [];
         const third = order[2] ? allTeamsInGroups[order[2]] : null;
@@ -453,7 +424,7 @@ export default function KnockoutsPage() {
     }
   };
   
-  const handleSelectWinner = (matchId: string, round: string, team: Team) => {
+  const handleSelectWinner = (matchId: string, team: Team) => {
     setSelections(prev => ({
       ...prev,
       [matchId]: team.id
@@ -463,7 +434,6 @@ export default function KnockoutsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Build predictions array from selections
       const predictionsToSave = Object.entries(selections).map(([matchId, winnerId]) => ({
         type: "KNOCKOUT",
         knockoutRound: matchId,
@@ -491,19 +461,18 @@ export default function KnockoutsPage() {
     const isSelected2 = selections[match.id] === match.team2?.id;
     
     return (
-      <div className={`flex ${compact ? 'flex-row items-center gap-1' : 'flex-col gap-2'}`}>
-        {/* Team 1 */}
+      <div className={`flex ${compact ? 'flex-row items-center gap-2' : 'flex-col gap-2'}`}>
         <motion.button
           whileHover={predictionsLocked ? {} : { scale: 1.02 }}
           whileTap={predictionsLocked ? {} : { scale: 0.98 }}
-          onClick={() => !predictionsLocked && match.team1 && handleSelectWinner(match.id, match.round, match.team1!)}
+          onClick={() => !predictionsLocked && match.team1 && handleSelectWinner(match.id, match.team1!)}
           disabled={!match.team1 || predictionsLocked}
           className={`
-            flex items-center gap-2 p-2 rounded-lg border transition-all min-h-[40px] w-full
-            ${!match.team1 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+            flex items-center gap-2 p-2 rounded-xl border-2 transition-all min-h-[44px] w-full
+            ${!match.team1 || predictionsLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
             ${isSelected1 
-              ? "bg-[#2B3FE8]/20 border-[#2B3FE8] shadow-[0_0_12px_rgba(43,63,232,0.3)]" 
-              : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
+              ? "bg-blue-100 border-blue-400 shadow-md" 
+              : "bg-white border-gray-200 hover:border-gray-300"}
           `}
         >
           {match.team1 ? (
@@ -511,29 +480,28 @@ export default function KnockoutsPage() {
               <img
                 src={getEmojiUrl(match.team1.flag)}
                 alt={match.team1.name}
-                className="w-5 h-4 rounded-sm object-cover flex-shrink-0"
+                className="w-6 h-4 rounded object-cover flex-shrink-0"
               />
-              <span className={`text-xs truncate ${isSelected1 ? "text-white font-semibold" : "text-gray-300"}`}>
+              <span className={`text-sm truncate ${isSelected1 ? "text-blue-900 font-semibold" : "text-gray-700"}`}>
                 {match.team1.name}
               </span>
             </>
           ) : (
-            <span className="text-xs text-gray-500">TBD</span>
+            <span className="text-sm text-gray-400">TBD</span>
           )}
         </motion.button>
         
-        {/* Team 2 */}
         <motion.button
           whileHover={predictionsLocked ? {} : { scale: 1.02 }}
           whileTap={predictionsLocked ? {} : { scale: 0.98 }}
-          onClick={() => !predictionsLocked && match.team2 && handleSelectWinner(match.id, match.round, match.team2!)}
+          onClick={() => !predictionsLocked && match.team2 && handleSelectWinner(match.id, match.team2!)}
           disabled={!match.team2 || predictionsLocked}
           className={`
-            flex items-center gap-2 p-2 rounded-lg border transition-all min-h-[40px] w-full
-            ${!match.team2 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+            flex items-center gap-2 p-2 rounded-xl border-2 transition-all min-h-[44px] w-full
+            ${!match.team2 || predictionsLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
             ${isSelected2 
-              ? "bg-[#2B3FE8]/20 border-[#2B3FE8] shadow-[0_0_12px_rgba(43,63,232,0.3)]" 
-              : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
+              ? "bg-blue-100 border-blue-400 shadow-md" 
+              : "bg-white border-gray-200 hover:border-gray-300"}
           `}
         >
           {match.team2 ? (
@@ -541,14 +509,14 @@ export default function KnockoutsPage() {
               <img
                 src={getEmojiUrl(match.team2.flag)}
                 alt={match.team2.name}
-                className="w-5 h-4 rounded-sm object-cover flex-shrink-0"
+                className="w-6 h-4 rounded object-cover flex-shrink-0"
               />
-              <span className={`text-xs truncate ${isSelected2 ? "text-white font-semibold" : "text-gray-300"}`}>
+              <span className={`text-sm truncate ${isSelected2 ? "text-blue-900 font-semibold" : "text-gray-700"}`}>
                 {match.team2.name}
               </span>
             </>
           ) : (
-            <span className="text-xs text-gray-500">TBD</span>
+            <span className="text-sm text-gray-400">TBD</span>
           )}
         </motion.button>
       </div>
@@ -557,184 +525,158 @@ export default function KnockoutsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#2B3FE8] border-t-transparent"></div>
-          <p className="text-gray-400 text-body-large">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-500" />
+          <p className="text-gray-500">Loading...</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-page py-8">
-      {/* Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#2B3FE8]/10 via-transparent to-[#E8152A]/10" />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-red-50 via-white to-blue-50" />
       </div>
 
       <div className="wc-container relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 px-4">
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors text-body"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-current">
               <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            Back to Dashboard
+            Back
           </button>
-          <span className="text-xs tracking-[0.4em] uppercase text-gray-500">Knockout Stage</span>
+          <CountdownTimer targetDate={PREDICTION_DEADLINE} variant="compact" />
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 px-4"
+          className="text-center mb-8"
         >
-          <h1 className="font-display text-h3 text-white mb-3">
-            Knockout Stage Predictions
-          </h1>
-          <p className="text-body text-gray-400 max-w-2xl mx-auto">
-            Tap to select winners for each match. Winners automatically advance to the next round.
-          </p>
+          <h1 className="font-display text-4xl sm:text-5xl text-gray-900 mb-2">Knockout Stage</h1>
+          <p className="text-gray-500">Tap to select winners for each match</p>
         </motion.div>
 
-        {/* Countdown Timer */}
-        <div className="mb-8 px-4">
-          <CountdownTimer
-            targetDate={PREDICTION_DEADLINE}
-            onLockChange={setPredictionsLocked}
-          />
-        </div>
-
-        {/* Bracket Container - Grid Layout with Better Separation */}
-        <div className="px-4 space-y-8">
-          {/* Round of 32 */}
-          <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-            <h3 className="font-display text-sm text-[#2B3FE8] text-center mb-4 tracking-wider uppercase">Round of 32</h3>
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl p-4 border-2 border-gray-200">
+            <h3 className="font-display text-sm text-gray-500 text-center mb-3 tracking-wider uppercase">Round of 32</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {bracket.r32.map((match) => (
-                <div key={match.id} className="bg-black/20 rounded-xl p-2 border border-white/5">
+                <div key={match.id} className="bg-gray-50 rounded-xl p-2 border border-gray-100">
                   {renderMatch(match, true)}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Connector Line */}
           <div className="flex justify-center">
-            <div className="h-8 w-[2px] bg-gradient-to-b from-[#2B3FE8]/50 to-[#2B3FE8]/20"></div>
+            <div className="h-6 w-[2px] bg-gradient-to-b from-gray-300 to-gray-200" />
           </div>
 
-          {/* Round of 16 */}
-          <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-            <h3 className="font-display text-sm text-[#2B3FE8] text-center mb-4 tracking-wider uppercase">Round of 16</h3>
+          <div className="bg-white rounded-2xl p-4 border-2 border-gray-200">
+            <h3 className="font-display text-sm text-gray-500 text-center mb-3 tracking-wider uppercase">Round of 16</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {bracket.r16.map((match) => (
-                <div key={match.id} className="bg-black/30 rounded-xl p-3 border border-white/10 shadow-lg">
+                <div key={match.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   {renderMatch(match, true)}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Connector Line */}
           <div className="flex justify-center">
-            <div className="h-12 w-[2px] bg-gradient-to-b from-[#2B3FE8]/50 to-[#2B3FE8]/20"></div>
+            <div className="h-8 w-[2px] bg-gradient-to-b from-gray-300 to-gray-200" />
           </div>
 
-          {/* Quarter Finals */}
-          <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-            <h3 className="font-display text-sm text-[#2B3FE8] text-center mb-4 tracking-wider uppercase">Quarter Finals</h3>
+          <div className="bg-white rounded-2xl p-4 border-2 border-gray-200">
+            <h3 className="font-display text-sm text-gray-500 text-center mb-3 tracking-wider uppercase">Quarter Finals</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {bracket.qf.map((match) => (
-                <div key={match.id} className="bg-black/30 rounded-xl p-4 border border-white/10 shadow-lg">
+                <div key={match.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   {renderMatch(match)}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Connector Line */}
           <div className="flex justify-center">
-            <div className="h-16 w-[2px] bg-gradient-to-b from-[#2B3FE8]/50 to-[#2B3FE8]/20"></div>
+            <div className="h-10 w-[2px] bg-gradient-to-b from-gray-300 to-gray-200" />
           </div>
 
-          {/* Semi Finals */}
-          <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-            <h3 className="font-display text-sm text-[#2B3FE8] text-center mb-4 tracking-wider uppercase">Semi Finals</h3>
+          <div className="bg-white rounded-2xl p-4 border-2 border-gray-200">
+            <h3 className="font-display text-sm text-gray-500 text-center mb-3 tracking-wider uppercase">Semi Finals</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
               {bracket.sf.map((match) => (
-                <div key={match.id} className="bg-black/40 rounded-xl p-4 border border-[#2B3FE8]/30 shadow-lg shadow-[#2B3FE8]/10">
+                <div key={match.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   {renderMatch(match)}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Connector Line */}
           <div className="flex justify-center">
-            <div className="h-20 w-[2px] bg-gradient-to-b from-[#F5E642]/50 to-[#F5E642]/20"></div>
+            <div className="h-12 w-[2px] bg-gradient-to-b from-yellow-400 to-gray-200" />
           </div>
 
-          {/* Third Place & Final */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Third Place */}
-            <div className="bg-white/5 rounded-2xl p-4 border border-[#F5E642]/20">
-              <h3 className="font-display text-sm text-[#F5E642] text-center mb-4 tracking-wider uppercase">Third Place</h3>
-              <div className="bg-black/30 rounded-xl p-4 border border-[#F5E642]/20">
+            <div className="bg-white rounded-2xl p-4 border-2 border-gray-200">
+              <h3 className="font-display text-sm text-yellow-600 text-center mb-3 tracking-wider uppercase">Third Place</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 {renderMatch(bracket.third[0])}
               </div>
             </div>
 
-            {/* Final */}
-            <div className="bg-white/5 rounded-2xl p-4 border border-[#F5E642]/30">
-              <h3 className="font-display text-sm text-[#F5E642] text-center mb-4 tracking-wider uppercase">Final</h3>
-              <div className="bg-black/40 rounded-xl p-4 border border-[#F5E642]/30 shadow-lg shadow-[#F5E642]/10">
+            <div className="bg-white rounded-2xl p-4 border-2 border-yellow-200">
+              <h3 className="font-display text-sm text-yellow-600 text-center mb-3 tracking-wider uppercase">Final</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-yellow-100">
                 {bracket.final[0].team1 && bracket.final[0].team2 ? (
                   <div className="flex flex-col gap-2">
                     <motion.button
                       whileHover={predictionsLocked ? {} : { scale: 1.02 }}
                       whileTap={predictionsLocked ? {} : { scale: 0.98 }}
-                      onClick={() => !predictionsLocked && handleSelectWinner("final", "final", bracket.final[0].team1!)}
+                      onClick={() => !predictionsLocked && handleSelectWinner("final", bracket.final[0].team1!)}
                       disabled={predictionsLocked}
                       className={`
-                        flex items-center gap-3 p-3 rounded-lg border transition-all
-                        ${!bracket.final[0].team1 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+                        flex items-center gap-3 p-3 rounded-xl border-2 transition-all
+                        ${!bracket.final[0].team1 || predictionsLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
                         ${selections["final"] === bracket.final[0].team1?.id 
-                          ? "bg-[#F5E642]/20 border-[#F5E642] shadow-[0_0_12px_rgba(245,230,66,0.3)]" 
-                          : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
+                          ? "bg-yellow-100 border-yellow-400" 
+                          : "bg-white border-gray-200 hover:border-gray-300"}
                       `}
                     >
-                      <img src={getEmojiUrl(bracket.final[0].team1.flag)} alt="" className="w-6 h-5 rounded-sm" />
-                      <span className={`text-sm ${selections["final"] === bracket.final[0].team1?.id ? "text-white font-semibold" : "text-gray-300"}`}>
+                      <img src={getEmojiUrl(bracket.final[0].team1.flag)} alt="" className="w-8 h-6 rounded object-cover" />
+                      <span className={`text-sm ${selections["final"] === bracket.final[0].team1?.id ? "text-yellow-900 font-semibold" : "text-gray-700"}`}>
                         {bracket.final[0].team1.name}
                       </span>
                     </motion.button>
-                    <div className="text-center py-1 text-xs text-gray-600">vs</div>
+                    <div className="text-center py-1 text-xs text-gray-400">vs</div>
                     <motion.button
                       whileHover={predictionsLocked ? {} : { scale: 1.02 }}
                       whileTap={predictionsLocked ? {} : { scale: 0.98 }}
-                      onClick={() => !predictionsLocked && handleSelectWinner("final", "final", bracket.final[0].team2!)}
+                      onClick={() => !predictionsLocked && handleSelectWinner("final", bracket.final[0].team2!)}
                       disabled={predictionsLocked}
                       className={`
-                        flex items-center gap-3 p-3 rounded-lg border transition-all
-                        ${!bracket.final[0].team2 || predictionsLocked ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+                        flex items-center gap-3 p-3 rounded-xl border-2 transition-all
+                        ${!bracket.final[0].team2 || predictionsLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
                         ${selections["final"] === bracket.final[0].team2?.id 
-                          ? "bg-[#F5E642]/20 border-[#F5E642] shadow-[0_0_12px_rgba(245,230,66,0.3)]" 
-                          : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}
+                          ? "bg-yellow-100 border-yellow-400" 
+                          : "bg-white border-gray-200 hover:border-gray-300"}
                       `}
                     >
-                      <img src={getEmojiUrl(bracket.final[0].team2.flag)} alt="" className="w-6 h-5 rounded-sm" />
-                      <span className={`text-sm ${selections["final"] === bracket.final[0].team2?.id ? "text-white font-semibold" : "text-gray-300"}`}>
+                      <img src={getEmojiUrl(bracket.final[0].team2.flag)} alt="" className="w-8 h-6 rounded object-cover" />
+                      <span className={`text-sm ${selections["final"] === bracket.final[0].team2?.id ? "text-yellow-900 font-semibold" : "text-gray-700"}`}>
                         {bracket.final[0].team2.name}
                       </span>
                     </motion.button>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-sm text-gray-500">
+                  <div className="text-center py-8 text-sm text-gray-400">
                     Complete Semi Finals<br/>to see finalists
                   </div>
                 )}
@@ -743,11 +685,10 @@ export default function KnockoutsPage() {
           </div>
         </div>
 
-        {/* Done Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-center mt-8 px-4"
+          className="flex justify-center mt-8"
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -760,14 +701,13 @@ export default function KnockoutsPage() {
           </motion.button>
         </motion.div>
         
-        {/* Legend */}
-        <div className="flex justify-center gap-6 mt-6 px-4 text-xs text-gray-500">
+        <div className="flex justify-center gap-6 mt-6 text-xs text-gray-400">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-[#2B3FE8]/20 border border-[#2B3FE8]"></div>
-            <span>Selected Winner</span>
+            <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400" />
+            <span>Selected</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-white/5 border border-white/10"></div>
+            <div className="w-4 h-4 rounded bg-white border-2 border-gray-200" />
             <span>Tap to Select</span>
           </div>
         </div>

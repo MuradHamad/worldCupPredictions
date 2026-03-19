@@ -33,6 +33,45 @@ interface RoomLeaderboard {
   }[];
 }
 
+const TOTAL_GROUP_MATCHES = 72;
+const TOTAL_THIRDS = 8;
+const TOTAL_KNOCKOUT_MATCHES = 32;
+
+function countValidGroupMatchPredictions(predictions: Prediction[]): number {
+  let totalMatches = 0;
+  
+  predictions.forEach(pred => {
+    if (pred.type === "GROUP" && pred.teamOrder) {
+      pred.teamOrder.forEach(entry => {
+        if (entry.startsWith("MATCH|")) {
+          const parts = entry.split("|");
+          if (parts.length === 4) {
+            const scoreStr = parts[3];
+            const [home, away] = scoreStr.split("-").map(Number);
+            if (!isNaN(home) && !isNaN(away) && home >= 0 && away >= 0) {
+              totalMatches++;
+            }
+          }
+        }
+      });
+    }
+  });
+  
+  return totalMatches;
+}
+
+function countThirdsSelected(predictions: Prediction[]): number {
+  const thirdsPred = predictions.find(p => p.type === "THIRDS");
+  if (!thirdsPred || !thirdsPred.teamOrder) return 0;
+  return thirdsPred.teamOrder.length;
+}
+
+function countKnockoutMatchesPredicted(predictions: Prediction[]): number {
+  return predictions
+    .filter(p => p.type === "KNOCKOUT" && p.teamOrder)
+    .reduce((total, p) => total + p.teamOrder.length, 0);
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -86,61 +125,72 @@ export default function DashboardPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#2B3FE8] border-t-transparent"></div>
-          <p className="text-gray-400 text-body-large">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-500" />
+          <p className="text-gray-500">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const hasGroupPredictions = predictions.some(p => p.type === "GROUP");
-  const hasKnockoutPredictions = predictions.some(p => p.type === "KNOCKOUT");
-  const hasThirdsPredictions = predictions.some(p => p.type === "THIRDS");
-  const hasAnyPredictions = predictions.length > 0;
-  const hasCompleteGroupStage = hasGroupPredictions && hasThirdsPredictions;
+  const validGroupMatches = countValidGroupMatchPredictions(predictions);
+  const thirdsSelected = countThirdsSelected(predictions);
+  const knockoutMatches = countKnockoutMatchesPredicted(predictions);
+
+  const groupsComplete = validGroupMatches === TOTAL_GROUP_MATCHES;
+  const groupsStarted = validGroupMatches > 0;
+  const thirdsComplete = thirdsSelected === TOTAL_THIRDS;
+  const thirdsStarted = thirdsSelected > 0;
+  const knockoutsComplete = knockoutMatches === TOTAL_KNOCKOUT_MATCHES;
+  const knockoutsStarted = knockoutMatches > 0;
+  const hasAnyValidPredictions = groupsStarted || thirdsStarted || knockoutsStarted;
 
   return (
-    <div className="min-h-screen bg-page">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0B0F2B]/90 backdrop-blur-xl border-b border-white/10">
+    <div className="min-h-screen bg-gray-50 ">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="wc-container">
-          <div className="flex items-center justify-between py-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2B3FE8] to-[#2535C7] flex items-center justify-center">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-white">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke="currentColor" strokeWidth="2"/>
-                  <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="white" />
+                  <circle cx="12" cy="12" r="4" fill="#fe1644" />
                 </svg>
               </div>
               <div>
-                <h1 className="font-display text-2xl text-white leading-none">PREDICTOR</h1>
-                <p className="text-sm font-bold tracking-[0.2em] text-[#F5E642] mt-1">GLOBAL CUP 2026</p>
+                <span className="font-display text-xl text-gray-900">GLOBAL CUP</span>
+                <span className="font-display text-sm text-gray-500 ml-2">2026</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-4" ref={dropdownRef}>
-              <div className="relative">
+            <div className="flex items-center gap-4">
+              <CountdownTimer
+                targetDate={PREDICTION_DEADLINE}
+                variant="subtle"
+                className="hidden sm:flex"
+              />
+              
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-3 p-1 pr-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all"
+                  className="flex items-center gap-3 p-1.5 pr-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all"
                 >
                   {session?.user?.image ? (
-                    <img src={session.user.image} alt="" className="w-10 h-10 rounded-xl" />
+                    <img src={session.user.image} alt="" className="w-9 h-9 rounded-xl" />
                   ) : (
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2B3FE8] to-[#E8152A] flex items-center justify-center">
-                      <span className="text-white font-display text-lg">{session?.user?.name?.charAt(0) || "U"}</span>
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+                      <span className="text-white font-display text-base">{session?.user?.name?.charAt(0) || "U"}</span>
                     </div>
                   )}
                   <svg 
-                    width="16" 
-                    height="16" 
+                    width="14" 
+                    height="14" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="2" 
-                    className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
@@ -150,12 +200,12 @@ export default function DashboardPage() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute right-0 mt-3 w-48 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50"
+                    className="absolute right-0 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50"
                   >
                     <div className="p-1">
                       <button
                         onClick={() => signOut({ callbackUrl: "/login" })}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-all text-left"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -173,337 +223,253 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[calc(100vw-100px)] px-0 py-12 min-h-[calc(100vh-120px)]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
-          {/* Left Side - Predictions Summary (Larger - takes 3 columns) */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-3"
-          >
-            <div className="wc-card h-full">
-              {/* Countdown Timer */}
-              <div className="mb-6">
-                <CountdownTimer
-                  targetDate={PREDICTION_DEADLINE}
-                  onLockChange={setPredictionsLocked}
-                />
-              </div>
-
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="font-display text-h3 text-white">Your Predictions</h2>
-                <div className="flex gap-3">
-                  {hasAnyPredictions && (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => router.push("/summary")}
-                      className="wc-btn-secondary text-base py-3 px-6"
-                    >
-                      Summary
-                    </motion.button>
-                  )}
-                  {hasAnyPredictions && !predictionsLocked && (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => router.push(hasGroupPredictions && !hasThirdsPredictions ? "/thirds" : "/groups")}
-                      className="wc-btn-primary text-base py-3 px-6"
-                    >
-                      Edit Predictions
-                    </motion.button>
-                  )}
-                  {hasAnyPredictions && predictionsLocked && (
-                    <div className="wc-btn-disabled text-base py-3 px-6 cursor-not-allowed">
-                      Locked
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {!hasAnyPredictions ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <div className="w-28 h-28 bg-white/5 rounded-3xl flex items-center justify-center mb-8 border-2 border-white/10">
-                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" className="text-gray-500">
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <p className="text-body-large text-gray-400 mb-8">You haven&apos;t made any predictions yet</p>
-                  {!predictionsLocked ? (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => router.push("/groups")}
-                      className="wc-btn-primary"
-                    >
-                      Make Predictions
-                    </motion.button>
-                  ) : (
-                    <div className="wc-btn-disabled cursor-not-allowed">
-                      Predictions Locked
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Group Predictions Status */}
-                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-[#F5E642]/20 flex items-center justify-center">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#F5E642]">
-                            <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-display text-xl text-white">Group Stage</h3>
-                          <p className="text-gray-400">12 Groups</p>
-                        </div>
-                      </div>
-                      {hasGroupPredictions ? (
-                        <span className="wc-badge wc-badge-success">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Done
-                        </span>
-                      ) : (
-                        <span className="wc-badge wc-badge-warning">Pending</span>
-                      )}
-                    </div>
-                    {hasGroupPredictions && (
-                      <p className="text-body-large text-gray-400">
-                        {predictions.filter(p => p.type === "GROUP").length} groups predicted
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Third Place Picks Status */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/thirds")}
-                    className="p-6 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-[#F5E642]/20 flex items-center justify-center">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#F5E642]">
-                            <path d="M12 15l-2 5 2-1 2 1-2-5zM12 2l2 5H10l2-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-display text-xl text-white">Best 8 Thirds</h3>
-                          <p className="text-gray-400">Select 8 third-placed teams</p>
-                        </div>
-                      </div>
-                      {hasThirdsPredictions ? (
-                        <span className="wc-badge wc-badge-success">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Done
-                        </span>
-                      ) : hasGroupPredictions ? (
-                        <span className="wc-badge wc-badge-warning">Pending</span>
-                      ) : (
-                        <span className="wc-badge bg-gray-500/20 text-gray-400 border border-gray-500/30">Locked</span>
-                      )}
-                    </div>
-                    {hasThirdsPredictions && (
-                      <p className="text-body-large text-gray-400">
-                        8 third-placed teams selected
-                      </p>
-                    )}
-                  </motion.div>
-
-                  {/* Knockout Predictions Status */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/knockouts")}
-                    className="p-6 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-[#2B3FE8]/20 flex items-center justify-center">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#2B3FE8]">
-                            <path d="M8 21h8M12 17v4M7 4h10v9a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-display text-xl text-white">Knockout Stage</h3>
-                          <p className="text-gray-400">Round of 32 to Final</p>
-                        </div>
-                      </div>
-                      {hasKnockoutPredictions ? (
-                        <span className="wc-badge wc-badge-success">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Done
-                        </span>
-                      ) : (
-                        <span className="wc-badge wc-badge-warning">Pending</span>
-                      )}
-                    </div>
-                    {hasKnockoutPredictions ? (
-                      <p className="text-body-large text-gray-400">
-                        {predictions.filter(p => p.type === "KNOCKOUT").length} rounds predicted
-                      </p>
-                    ) : (
-                      <p className="text-body text-gray-400">
-                        Click to predict winners
-                      </p>
-                    )}
-                  </motion.div>
-
-                  {/* Prediction Summary */}
-                  {hasGroupPredictions && (
-                    <div className="md:col-span-2 p-6 bg-white/5 rounded-2xl border border-white/10">
-                      <h3 className="font-display text-xl text-white mb-4">Prediction Summary</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 bg-white/5 rounded-xl">
-                          <p className="font-display text-3xl wc-text-gradient mb-1">
-                            {predictions.filter(p => p.type === "GROUP").length}
-                          </p>
-                          <p className="text-gray-400 text-sm">Groups</p>
-                        </div>
-                        <div className="text-center p-4 bg-white/5 rounded-xl">
-                          <p className="font-display text-3xl text-[#F5E642] mb-1">
-                            {predictions.filter(p => p.type === "GROUP").length * 4}
-                          </p>
-                          <p className="text-gray-400 text-sm">Teams Ranked</p>
-                        </div>
-                        <div className="text-center p-4 bg-white/5 rounded-xl">
-                          <p className="font-display text-3xl text-[#2B3FE8] mb-1">
-                            {predictions.filter(p => p.type === "KNOCKOUT").length > 0 ? "Yes" : "No"}
-                          </p>
-                          <p className="text-gray-400 text-sm">Knockouts</p>
-                        </div>
-                        <div className="text-center p-4 bg-white/5 rounded-xl">
-                          <p className="font-display text-3xl text-white mb-1">
-                            {rooms[0]?.userScore || 0}
-                          </p>
-                          <p className="text-gray-400 text-sm">Your Points</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+      <main className="wc-container py-8 mx-[15px] mt-[15px] mb-[15px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10 mb-10">
+          <div className="lg:col-span-2 mx-0 mt-[15px] mb-[15px]">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="font-display text-3xl text-gray-900">Your Predictions</h1>
+              {hasAnyValidPredictions && !predictionsLocked && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push(!groupsComplete && groupsStarted ? "/thirds" : "/groups")}
+                  className="wc-btn-primary text-sm py-3 px-6"
+                >
+                  Edit
+                </motion.button>
               )}
             </div>
-          </motion.div>
 
-          {/* Right Side - Leaderboard (Narrower - takes 1 column) */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="wc-card h-full">
-              <h2 className="font-display text-h4 text-white mb-6">Leaderboard</h2>
-
-              {rooms.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-gray-500">
-                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <p className="text-body text-gray-400 mb-6">Not in any room yet</p>
+            {!hasAnyValidPredictions ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl p-12 border-2 border-gray-200 text-center"
+              >
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                    <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <p className="text-gray-500 text-xl mb-6">No predictions yet</p>
+                {!predictionsLocked && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/rooms")}
-                    className="wc-btn-primary text-base py-3 px-6 w-full"
+                    onClick={() => router.push("/groups")}
+                    className="wc-btn-primary"
                   >
-                    Join Room
+                    Start Predicting
                   </motion.button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {rooms.map((room) => (
-                    <div key={room.id}>
-                      {/* Room Header */}
-                      <div className="bg-gradient-to-r from-[#2B3FE8] to-[#2535C7] rounded-2xl px-5 py-4 mb-4">
-                        <h3 className="font-display text-xl text-white">{room.name}</h3>
-                        <p className="text-white/60 text-sm font-mono">{room.code}</p>
+                )}
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className="wc-progress-card cursor-pointer"
+                  onClick={() => router.push("/groups")}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500">
+                          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
                       </div>
-                      
-                      {/* User Rank */}
-                      <div className="flex items-center justify-between mb-6 p-4 bg-white/5 rounded-xl">
-                        <span className="text-gray-400">Your Rank</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-display text-4xl wc-text-gradient">
-                            #{room.userRank}
-                          </span>
-                          <span className="text-gray-500 text-lg">
-                            / {room.totalMembers}
-                          </span>
-                        </div>
+                      <div>
+                        <h3 className="font-display text-xl text-gray-900">Groups</h3>
+                        <p className="text-gray-500 text-sm">12 groups</p>
                       </div>
-                      
-                      {/* Leaderboard List */}
-                      <div className="space-y-3">
-                        {room.leaderboard.slice(0, 5).map((member) => (
-                          <div
-                            key={member.userId}
-                            className={`flex items-center justify-between py-3 px-4 rounded-xl ${
-                                member.userId === session?.user?.id
-                                  ? "bg-[#E8152A]/10 border border-[#E8152A]/30"
-                                  : "bg-white/5"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className={`font-display text-lg w-8 ${
-                                member.rank === 1 ? "text-[#FFD700]" :
-                                member.rank === 2 ? "text-gray-300" :
-                                member.rank === 3 ? "text-[#CD7F32]" :
-                                "text-gray-500"
-                              }`}>
-                                #{member.rank}
-                              </span>
-                              <span className="text-body-large text-white">
-                                {member.name}
-                                {member.userId === session?.user?.id && (
-                                  <span className="text-[#E8152A] ml-2">(You)</span>
-                                )}
-                              </span>
-                            </div>
-                            <span className="font-display text-xl text-white">{member.score}</span>
-                          </div>
-                        ))}
-                        {room.leaderboard.length > 5 && (
-                          <p className="text-center text-gray-500 text-sm pt-2">
-                            +{room.leaderboard.length - 5} more players
-                          </p>
-                        )}
-                      </div>
-                      
-                      {/* View Full Leaderboard Link */}
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => router.push("/leaderboard")}
-                        className="w-full mt-4 py-2 text-center text-[#2B3FE8] hover:text-[#3B4FF8] text-sm font-display transition-colors"
-                      >
-                        View Full Leaderboard →
-                      </motion.button>
                     </div>
-                  ))}
+                    {groupsComplete ? (
+                      <span className="wc-badge wc-badge-success">Done</span>
+                    ) : groupsStarted ? (
+                      <span className="wc-badge bg-blue-100 text-blue-600 border border-blue-200">{validGroupMatches}/72</span>
+                    ) : (
+                      <span className="wc-badge wc-badge-warning">Pending</span>
+                    )}
+                  </div>
+                  {groupsStarted && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <p className="text-sm text-gray-500">
+                        {validGroupMatches}/72 matches predicted
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className="wc-progress-card cursor-pointer"
+                  onClick={() => router.push("/thirds")}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-yellow-600">
+                          <path d="M12 15l-2 5 2-1 2 1-2-5zM12 2l2 5H10l2-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-display text-xl text-gray-900">Best 8 Thirds</h3>
+                        <p className="text-gray-500 text-sm">Advance to knockouts</p>
+                      </div>
+                    </div>
+                    {thirdsComplete ? (
+                      <span className="wc-badge wc-badge-success">Done</span>
+                    ) : thirdsStarted ? (
+                      <span className="wc-badge bg-blue-100 text-blue-600 border border-blue-200">{thirdsSelected}/8</span>
+                    ) : groupsStarted ? (
+                      <span className="wc-badge wc-badge-warning">Pending</span>
+                    ) : (
+                      <span className="wc-badge bg-gray-100 text-gray-500 border border-gray-200">Locked</span>
+                    )}
+                  </div>
+                  {thirdsStarted && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <p className="text-sm text-gray-500">
+                        {thirdsSelected}/8 teams selected
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className="wc-progress-card cursor-pointer sm:col-span-2"
+                  onClick={() => router.push("/knockouts")}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                          <path d="M8 21h8M12 17v4M7 4h10v9a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-display text-xl text-gray-900">Knockouts</h3>
+                        <p className="text-gray-500 text-sm">R32 to Final</p>
+                      </div>
+                    </div>
+                    {knockoutsComplete ? (
+                      <span className="wc-badge wc-badge-success">Done</span>
+                    ) : knockoutsStarted ? (
+                      <span className="wc-badge bg-blue-100 text-blue-600 border border-blue-200">{knockoutMatches}/32</span>
+                    ) : groupsStarted ? (
+                      <span className="wc-badge wc-badge-warning">Pending</span>
+                    ) : (
+                      <span className="wc-badge wc-badge-pending">Locked</span>
+                    )}
+                  </div>
+                  {knockoutsStarted && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <p className="text-sm text-gray-500">
+                        {knockoutMatches}/32 matches predicted
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h2 className="font-display text-2xl text-gray-900 mb-6">Leaderboard</h2>
+
+            {rooms.length === 0 ? (
+              <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 text-center">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
-              )}
-            </div>
-          </motion.div>
+                <p className="text-gray-500 mb-4">Not in any room</p>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push("/rooms")}
+                  className="wc-btn-secondary text-sm py-3 px-6"
+                >
+                  Join Room
+                </motion.button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {rooms.map((room) => (
+                  <motion.div
+                    key={room.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-2xl p-5 border-2 border-gray-200"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+                        <span className="text-white font-display text-sm">{room.name.charAt(0)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-display text-lg text-gray-900 truncate">{room.name}</h3>
+                        <p className="text-gray-400 text-sm font-mono">{room.code}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-xl">
+                      <span className="text-gray-500 text-sm">Your Rank</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-display text-3xl bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
+                          #{room.userRank}
+                        </span>
+                        <span className="text-gray-400 text-sm">/ {room.totalMembers}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {room.leaderboard.slice(0, 5).map((member) => (
+                        <div
+                          key={member.userId}
+                          className={`flex items-center justify-between py-2 px-3 rounded-xl ${
+                            member.userId === session?.user?.id
+                              ? "bg-red-50 border border-red-200"
+                              : "bg-gray-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`font-display text-sm w-6 ${
+                              member.rank === 1 ? "text-yellow-500" :
+                              member.rank === 2 ? "text-gray-400" :
+                              member.rank === 3 ? "text-amber-600" :
+                              "text-gray-400"
+                            }`}>
+                              #{member.rank}
+                            </span>
+                            <span className="text-gray-700 text-sm truncate max-w-[120px]">
+                              {member.name}
+                              {member.userId === session?.user?.id && (
+                                <span className="text-red-500 ml-1">(You)</span>
+                              )}
+                            </span>
+                          </div>
+                          <span className="font-display text-gray-900">{member.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {room.leaderboard.length > 5 && (
+                      <p className="text-center text-gray-400 text-sm pt-3">
+                        +{room.leaderboard.length - 5} more players
+                      </p>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

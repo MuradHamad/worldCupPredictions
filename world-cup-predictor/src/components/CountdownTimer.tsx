@@ -9,6 +9,7 @@ interface CountdownTimerProps {
   showLockMessage?: boolean;
   onLockChange?: (isLocked: boolean) => void;
   className?: string;
+  variant?: "default" | "subtle" | "compact";
 }
 
 interface TimeRemaining {
@@ -42,6 +43,7 @@ export default function CountdownTimer({
   showLockMessage = true,
   onLockChange,
   className = "",
+  variant = "default",
 }: CountdownTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
     calculateTimeRemaining(targetDate)
@@ -60,18 +62,15 @@ export default function CountdownTimer({
   }, [targetDate, isLocked, onLockChange]);
 
   useEffect(() => {
-    // Notify parent on mount if locked
     if (isLocked) {
       onLockChange?.(true);
     }
     
-    // Update every second
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
   }, [updateTimer, isLocked, onLockChange]);
 
-  // If predictions are locked
   if (isLocked || timeRemaining.total <= 0) {
     if (!showLockMessage) return null;
 
@@ -79,16 +78,16 @@ export default function CountdownTimer({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`bg-[#E8152A]/20 border border-[#E8152A]/30 rounded-2xl p-4 ${className}`}
+        className={`bg-red-50 border-2 border-red-200 rounded-2xl p-4 ${className}`}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#E8152A]/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
             <svg
               width="20"
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#E8152A"
+              stroke="#fe1644"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -98,8 +97,8 @@ export default function CountdownTimer({
             </svg>
           </div>
           <div>
-            <p className="font-display text-lg text-[#E8152A]">Predictions Locked</p>
-            <p className="text-white/60 text-sm">
+            <p className="font-display text-lg text-red-500">Predictions Locked</p>
+            <p className="text-gray-500 text-sm">
               Tournament has started. No more changes allowed.
             </p>
           </div>
@@ -108,24 +107,52 @@ export default function CountdownTimer({
     );
   }
 
+  if (variant === "subtle") {
+    return (
+      <div className={`flex items-center gap-2 text-sm ${className}`}>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500 wc-animate-pulse" />
+          <span className="text-gray-500 font-medium">Predictions Close In:</span>
+        </div>
+        <div className="flex items-center gap-1 font-display font-bold text-gray-700">
+          <span>{timeRemaining.days}d</span>
+          <span className="text-gray-400">:</span>
+          <span>{timeRemaining.hours.toString().padStart(2, "0")}h</span>
+          <span className="text-gray-400">:</span>
+          <span>{timeRemaining.minutes.toString().padStart(2, "0")}m</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "compact") {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <div className="w-2 h-2 rounded-full bg-red-500 wc-animate-pulse" />
+        <span className="text-sm font-medium text-gray-600">
+          {timeRemaining.days > 0 && `${timeRemaining.days}d `}
+          {timeRemaining.hours.toString().padStart(2, "0")}:
+          {timeRemaining.minutes.toString().padStart(2, "0")}:
+          {timeRemaining.seconds.toString().padStart(2, "0")}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className={`bg-white/5 border border-white/10 rounded-2xl p-4 ${className}`}>
+    <div className={`bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 ${className}`}>
       {title && (
-        <p className="text-white/60 text-sm font-display mb-3 uppercase tracking-wider">
+        <p className="text-gray-500 text-sm font-display mb-3 uppercase tracking-wider">
           {title}
         </p>
       )}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Days */}
         <TimeBlock value={timeRemaining.days} label="Days" />
         <Separator />
-        {/* Hours */}
         <TimeBlock value={timeRemaining.hours} label="Hrs" />
         <Separator />
-        {/* Minutes */}
         <TimeBlock value={timeRemaining.minutes} label="Min" />
         <Separator />
-        {/* Seconds */}
         <TimeBlock value={timeRemaining.seconds} label="Sec" />
       </div>
     </div>
@@ -137,12 +164,12 @@ function TimeBlock({ value, label }: { value: number; label: string }) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="bg-gradient-to-br from-[#2B3FE8] to-[#2535C7] rounded-xl px-2 sm:px-3 py-2 min-w-[3rem] sm:min-w-[3.5rem]">
+      <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl px-2 sm:px-3 py-2 min-w-[3rem] sm:min-w-[3.5rem]">
         <span className="font-display text-2xl sm:text-3xl text-white tabular-nums">
           {displayValue}
         </span>
       </div>
-      <span className="text-white/40 text-[10px] sm:text-xs mt-1 uppercase tracking-wider">
+      <span className="text-gray-400 text-[10px] sm:text-xs mt-1 uppercase tracking-wider">
         {label}
       </span>
     </div>
@@ -151,7 +178,7 @@ function TimeBlock({ value, label }: { value: number; label: string }) {
 
 function Separator() {
   return (
-    <span className="text-white/30 font-display text-xl sm:text-2xl -mt-4">
+    <span className="text-gray-300 font-display text-xl sm:text-2xl -mt-4">
       :
     </span>
   );

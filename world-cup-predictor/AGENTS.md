@@ -1,271 +1,179 @@
-# Agent Guidelines for World Cup Predictor
+# AGENTS Guide - WorldCupPrediction2026
 
-This document provides guidelines for AI agents working on this codebase.
+This guide is for agentic coding assistants working in this repository.
+Primary application directory: `world-cup-predictor/`.
 
-## Project Overview
+## Scope and precedence
 
-- **Framework**: Next.js 16.1.6 with React 19
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4 + custom CSS variables
-- **Database**: Prisma with SQLite (default)
-- **Auth**: NextAuth.js with Google OAuth
-- **Animations**: Framer Motion
-- **Package Manager**: npm
+- Apply these rules for all work under `world-cup-predictor/`.
+- If a deeper folder contains another AGENTS.md, that file overrides for its subtree.
+- Direct user instructions override this guide.
 
-## Build Commands
+## Tech stack snapshot
 
-```bash
-# Development
-npm run dev              # Start development server (port 3000)
+- Next.js 16 App Router + React 19
+- TypeScript (`strict: true`)
+- Tailwind CSS v4 + `src/app/globals.css` theme vars
+- NextAuth (Google provider)
+- Prisma ORM + PostgreSQL datasource
+- Framer Motion, Zod, Axios
 
-# Production
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Run ESLint
+## Working directory
 
-# Database
-npx prisma generate      # Generate Prisma client
-npx prisma db push       # Push schema to database
-npx prisma studio        # Open Prisma database GUI
-```
-
-## Code Style Guidelines
-
-### General Principles
-
-1. **Use TypeScript**: Always use TypeScript. Avoid `any` type.
-2. **Client vs Server Components**: Use `"use client"` only when needed (hooks, browser APIs, interactive UI).
-3. **Error Handling**: Always wrap async operations in try-catch. Return proper error responses in API routes.
-4. **Environment Variables**: Never commit secrets. Use `.env.local` for local development.
-5. **Use Context7 MCP**: Always use Context7 MCP when you need library/API documentation, code generation, setup or configuration steps. Do not guess or hallucinate APIs.
-
-### Imports
-
-- Use `@/` path alias for internal imports (e.g., `import { authOptions } from "@/lib/auth"`)
-- Order imports: external libs → internal libs → components → utilities
-- Group imports with blank lines between groups
-
-```typescript
-// External
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-
-// Internal
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-
-// Components
-import DashboardCard from "@/components/DashboardCard";
-```
-
-### Naming Conventions
-
-- **Files**: PascalCase for components (`LoginPage.tsx`), camelCase for utilities (`auth.ts`)
-- **Components**: PascalCase (`LoginPage`, `RoomCard`)
-- **Functions**: camelCase (`handleSubmit`, `fetchData`)
-- **Constants**: UPPER_SNAKE_CASE (`MAX_ROOM_SIZE`, `API_TIMEOUT`)
-- **Interfaces/Types**: PascalCase with descriptive names (`RoomMember`, `UserPrediction`)
-
-### Component Structure
-
-```typescript
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-
-interface Props {
-  title: string;
-  onSubmit: (data: Data) => void;
-}
-
-export default function ComponentName({ title, onSubmit }: Props) {
-  const [state, setState] = useState<string>("");
-
-  useEffect(() => {
-    // Effect logic
-  }, []);
-
-  const handleAction = () => {
-    // Handler logic
-  };
-
-  return (
-    <div>
-      {/* JSX */}
-    </div>
-  );
-}
-```
-
-### API Routes
-
-- Use named exports for HTTP methods (`GET`, `POST`, `PUT`, `DELETE`)
-- Always validate input before processing
-- Return appropriate status codes:
-  - `200` for success
-  - `400` for bad request
-  - `401` for unauthorized
-  - `500` for server errors
-
-```typescript
-export async function POST(req: NextRequest) {
-  try {
-    // Validate auth
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Validate input
-    const body = await req.json();
-    if (!body.name) {
-      return NextResponse.json({ error: "Name required" }, { status: 400 });
-    }
-
-    // Process
-    const result = await prisma.room.create({ /* ... */ });
-
-    return NextResponse.json({ success: true, data: result });
-  } catch (error) {
-    console.error("Error:", error);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
-  }
-}
-```
-
-### CSS & Styling
-
-- Use Tailwind utility classes as primary styling
-- Define custom colors in `globals.css` CSS variables
-- Use `font-display` class for headings (defined in globals.css)
-- Avoid inline styles; use CSS classes
-
-```tsx
-// Good
-<div className="flex items-center justify-between p-4 bg-card rounded-xl">
-
-// Avoid
-<div style={{ display: "flex", padding: "16px" }}>
-```
-
-### Database (Prisma)
-
-- Use Prisma Client for all database operations
-- Always handle potential null values from queries
-- Use transactions for multi-step operations
-
-```typescript
-// Query with error handling
-const room = await prisma.room.findUnique({ where: { id } });
-if (!room) {
-  return NextResponse.json({ error: "Room not found" }, { status: 404 });
-}
-```
-
-### Authentication
-
-- Use `getServerSession` for server-side auth checks
-- Use `useSession` hook for client-side auth
-- Protect all API routes with auth validation
-
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── auth/          # NextAuth routes
-│   │   ├── rooms/         # Room API
-│   │   └── predictions/   # Predictions API
-│   ├── dashboard/         # Dashboard page
-│   ├── groups/            # Groups predictions page
-│   ├── login/             # Login page
-│   └── rooms/             # Room management pages
-├── components/            # Reusable components
-├── lib/                   # Utilities (auth, prisma)
-└── types/                 # TypeScript type definitions
-```
-
-## Common Patterns
-
-### Loading States
-
-```tsx
-const [isLoading, setIsLoading] = useState(true);
-
-// In JSX
-{isLoading ? (
-  <div className="flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
-  </div>
-) : (
-  <Content />
-)}
-```
-
-### Form Handling
-
-```tsx
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  
-  try {
-    const res = await fetch("/api/endpoint", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-    
-    if (!res.ok) throw new Error("Failed");
-    
-    // Handle success
-  } catch (err) {
-    // Handle error
-  } finally {
-    setIsLoading(false);
-  }
-};
-```
-
-### Conditional Classes
-
-Use template literals for conditional classes:
-
-```tsx
-<div className={`base-class ${isActive ? "active-class" : ""} ${disabled ? "opacity-50" : ""}`}>
-```
-
-## Important Notes
-
-1. **No Copyright/Trademark**: Do not use "World Cup", "FIFA", "2026 WC" in UI text. Use "Global Cup" instead.
-2. **Font**: This project uses Barlow Condensed (loaded via Google Fonts).
-3. **Colors**: Primary colors are defined in globals.css as CSS variables.
-4. **Mobile First**: Design responsive layouts starting from mobile.
-5. **Accessibility**: Use semantic HTML, proper ARIA labels, and keyboard navigation.
-
-## Skill References
-
-When working on frontend, reference:
-- `.agents/skills/frontend-design/` - For design best practices
-- `.agents/skills/vercel-react-best-practices/` - For React/Next.js optimization
-
-## Testing
-
-No test framework is currently configured. To add tests:
+Run project commands from:
 
 ```bash
-npm install -D vitest @testing-library/react @testing-library/jest-dom
+cd world-cup-predictor
 ```
 
-Then add to package.json:
+## Build / lint / run commands
+
+```bash
+npm run dev      # start local dev server
+npm run build    # production build + type checks
+npm run start    # run production server
+npm run lint     # run ESLint
+```
+
+## Database / Prisma commands
+
+```bash
+npx prisma generate
+npx prisma db push
+npx prisma studio
+npx prisma migrate dev --name <migration_name>
+npx prisma migrate deploy
+npm run prisma seed
+```
+
+## Test commands (including single test)
+
+Current status:
+- No test runner scripts exist in `package.json` yet.
+- `npm test`/single-test commands will fail until a test framework is added.
+
+Recommended setup (Vitest):
+
+```bash
+npm i -D vitest @testing-library/react @testing-library/jest-dom
+```
+
+Suggested scripts:
+
 ```json
 {
   "scripts": {
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:single": "vitest run"
   }
 }
 ```
+
+Run a single test file:
+
+```bash
+npm run test:single -- src/app/groups/groups.test.tsx
+```
+
+Run a single test by name:
+
+```bash
+npm run test:single -- -t "reorders teams"
+```
+
+## Cursor / Copilot instructions check
+
+No repository-level files were found for:
+- `.cursor/rules/`
+- `.cursorrules`
+- `.github/copilot-instructions.md`
+
+If they are later added, update this guide and follow them.
+
+## Coding standards
+
+### TypeScript
+
+- Keep code strict-type safe; do not weaken `tsconfig` strictness.
+- Avoid `any`; use explicit interfaces, unions, and narrowing.
+- Handle nullable auth/DB values safely (`session?.user?.id`).
+
+### Imports
+
+- Use `@/*` alias for internal imports.
+- Order imports: external -> internal alias -> local relative.
+- Separate import groups with one blank line.
+
+### Naming
+
+- Components and types/interfaces: PascalCase.
+- Variables/functions: camelCase.
+- Constants: UPPER_SNAKE_CASE only for true constants.
+- Route handlers: named HTTP exports (`GET`, `POST`, etc.).
+
+### Formatting and structure
+
+- Follow existing style: double quotes, semicolons.
+- Prefer early returns over nested conditionals.
+- Keep handlers/functions small and focused.
+- Add comments only when logic is non-obvious.
+
+### React / Next.js
+
+- Prefer Server Components; add `"use client"` only when required.
+- Keep state local and minimal in client components.
+- Use proper loading/empty/error states for async UI.
+- Use `next/navigation` APIs for app routing.
+
+### API route patterns
+
+- Standard flow in handlers:
+  1) authenticate,
+  2) parse + validate input,
+  3) execute DB logic,
+  4) return structured JSON.
+- Use status codes consistently: 400, 401, 404, 500.
+- Wrap route logic in `try/catch` and log contextual errors.
+- Do not expose secrets or raw internals in response bodies.
+
+### Prisma
+
+- Always use shared client from `src/lib/prisma.ts`.
+- Use explicit `where/select/include` clauses.
+- Use transactions for multi-step dependent writes.
+- Keep upsert-like behavior deterministic.
+
+### Styling/UI
+
+- Prefer Tailwind utilities and shared `wc-*` classes.
+- Reuse theme tokens from `globals.css`.
+- Verify responsive behavior (mobile + desktop).
+- For drag/drop and gestures, ensure touch + pointer support.
+
+### Security/config
+
+- Never commit `.env` secrets.
+- Common required env vars:
+  - `DATABASE_URL`
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - NextAuth secret/base URL settings
+
+## Agent workflow
+
+- Inspect adjacent files before editing to match local patterns.
+- After changes, run `npm run lint` or `npm run build`.
+- Prefer small, reviewable patches over broad rewrites.
+- When tests are present, add/adjust focused tests with each bug fix.
+
+## Project-specific product guardrails
+
+- Avoid trademarked tournament branding in UI text unless explicitly requested.
+- Keep naming and palette consistent with current app theme choices.
+
+## Documentation rule
+
+- Always use Context7 MCP when library/API documentation, setup, configuration,
+  or code-generation guidance is needed.
+- Do not guess external API signatures when docs are available.
