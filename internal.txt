@@ -1,0 +1,6 @@
+internal : 
+postgresql://admin:6A8YLpIC8OPaigTsoI2mrkdTtA0NuHbS@dpg-d6jsf1ma2pns73frm9a0-a/world_cup
+external : 
+postgresql://admin:6A8YLpIC8OPaigTsoI2mrkdTtA0NuHbS@dpg-d6jsf1ma2pns73frm9a0-a.singapore-postgres.render.com/world_cup
+nextauth_secret:
+sfiudsf89wur873rb328923ru98fhnisd
